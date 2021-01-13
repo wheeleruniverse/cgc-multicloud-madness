@@ -51,29 +51,38 @@ namespace Wheeler.PictureAnalyzer
 
         private Response ProcessRecord(S3EventNotification.S3EventNotificationRecord record)
         {
-            // validate s3 put event
-            string s3Action = record.EventName;
-            string xpAction = "ObjectCreated:Put";
-            if (!s3Action.Equals(xpAction))
-            {
-                string error = $"Expected: {xpAction}; Received: {s3Action}";
-                LambdaLogger.Log(error);
-                return new Response(false, error);
-            }
+            // extract event details
+            string s3ActionName = record.EventName;
+            string s3BucketName = record.S3.Bucket.Name;
+            string s3ObjectName = record.S3.Object.Key;
 
             // form response with event details
             Response response = new Response
             {
-                S3Action = s3Action,
-                S3Bucket = record.S3.Bucket.Name,
-                S3Object = record.S3.Object.Key
+                S3ActionName = s3ActionName,
+                S3BucketName = s3BucketName,
+                S3ObjectName = s3ObjectName
             };
 
+
+            // validate s3 put event
+            string xpActionName = "ObjectCreated:Put";
+            if (!s3ActionName.Equals(xpActionName))
+            {
+                string error = $"Expected: {xpActionName}; Received: {s3ActionName}";
+                LambdaLogger.Log(error);
+                return new Response(false, error);
+            }
+
             // read object from s3
-            byte[] s3ObjectBytes = ReadFromS3(response.S3Bucket, response.S3Object).Result;
+            InMemoryObject s3Object = ReadFromS3(s3BucketName, s3ObjectName).Result;
+            LambdaLogger.Log(s3Object.ToString());
 
             // process the object with gcp vision
-            SendToVision(s3ObjectBytes);
+            VisionAnalysis analysis = SendToVision(s3Object.Data);
+            LambdaLogger.Log(analysis.ToString());
+
+            response.VisionAnalysis = analysis;
 
             // TODO: Write GCP Vision API Results to Azure Tables
 
@@ -81,7 +90,7 @@ namespace Wheeler.PictureAnalyzer
         }
 
 
-        private async Task<byte[]> ReadFromS3(string s3Bucket, string s3Object)
+        private async Task<InMemoryObject> ReadFromS3(string s3Bucket, string s3Object)
         {
             GetObjectRequest request = new GetObjectRequest
             {
@@ -89,44 +98,45 @@ namespace Wheeler.PictureAnalyzer
                 Key = s3Object
             };
 
-            byte[] bytes = null;
-
             try
             {
                 using GetObjectResponse response = await s3Client.GetObjectAsync(request);
                 using Stream stream = response.ResponseStream;
-                using StreamReader reader = new StreamReader(stream);
+                using MemoryStream memory = new MemoryStream();
 
-                string type = response.Headers["Content-Type"];
-                Console.WriteLine($"Content Type: {type}");
+                // read headers
+                IEnumerable<string> headers = response.Headers.Keys.Select(i => response.Headers[i]);
 
-                string content = reader.ReadToEnd();
-                bytes = Convert.FromBase64String(content);
-                Console.WriteLine($"Content Size: {bytes.Length}");
+                // read data
+                int line;
+                byte[] buffer = new byte[16 * 1024];
+                while ((line = stream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    memory.Write(buffer, 0, line);
+                }
+                byte[] data = memory.ToArray();
 
-                return bytes;
+                // form response
+                return new InMemoryObject()
+                {
+                    Headers = headers,
+                    Data = data
+                };
             }
             catch(Exception e)
             {
-                Console.WriteLine($"ERROR: {e}");
+                LambdaLogger.Log($"ERROR: {e}");
+                throw;
             }
-
-            return bytes ?? new byte[0];
         }
 
 
-        private void SendToVision(byte[] bytes)
+        private VisionAnalysis SendToVision(byte[] bytes)
         {
             Image image = Image.FromBytes(bytes);
-
+            SafeSearchAnnotation safeSearch = visionClient.DetectSafeSearch(image);
             IReadOnlyList<EntityAnnotation> labels = visionClient.DetectLabels(image);
-            foreach(EntityAnnotation a in labels)
-            {
-                Console.WriteLine($"Description: {a.Description}");
-                Console.WriteLine($"Locale: {a.Locale}");
-                Console.WriteLine($"Score: {a.Score}");
-                Console.WriteLine($"Topicality: {a.Topicality}");
-            }
+            return new VisionAnalysis(safeSearch, labels);
         }
     }
 }
