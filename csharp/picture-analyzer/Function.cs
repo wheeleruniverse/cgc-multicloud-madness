@@ -1,9 +1,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Amazon;
 using Amazon.Lambda.Core;
+using Amazon.S3;
+using Amazon.S3.Model;
 using Amazon.S3.Util;
+using Google.Cloud.Vision.V1;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -14,30 +20,38 @@ namespace Wheeler.PictureAnalyzer
 {
     public class Function
     {
-        
+
+        private static readonly RegionEndpoint awsRegion = RegionEndpoint.USEast1;
+        private static IAmazonS3 s3Client;
+        private static ImageAnnotatorClient visionClient;
+
+
         /// <summary>
-        /// A simple function that takes a string and does a ToUpper
+        /// processes aws s3 put events by analyzing the data with the gcp vision service 
+        /// and storing the results in an azure tables nosql database
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        public List<Response> FunctionHandler(JObject input, ILambdaContext context)
+        /// <param name="request">the aws event that triggered this aws lambda function</param>
+        /// <param name="context">the aws lambda context</param>
+        /// <returns>a list of response instances</returns>
+        public List<Response> FunctionHandler(JObject request, ILambdaContext context)
         {
+            // set environment variables
+            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "creds/gcp-vision-svc.json");
 
-            List<Response> response = new List<Response>();
-            S3EventNotification s3Event = input.ToObject<S3EventNotification>();
+            // create cloud clients
+            s3Client ??= new AmazonS3Client(awsRegion);
+            visionClient ??= ImageAnnotatorClient.Create();
 
-            foreach(var r in s3Event.Records)
-            {
-                response.Add(ProcessRecord(r));
-            }
-            return response;
+            // convert the request into an s3 event 
+            S3EventNotification s3Event = request.ToObject<S3EventNotification>();
+
+            // process each record within the s3 event
+            return s3Event.Records.Select(i => ProcessRecord(i)).ToList();
         }
-
 
         private Response ProcessRecord(S3EventNotification.S3EventNotificationRecord record)
         {
-            // Validate S3 Event
+            // validate s3 put event
             string s3Action = record.EventName;
             string xpAction = "ObjectCreated:Put";
             if (!s3Action.Equals(xpAction))
@@ -47,7 +61,7 @@ namespace Wheeler.PictureAnalyzer
                 return new Response(false, error);
             }
 
-            // Extract S3 Event Details
+            // form response with event details
             Response response = new Response
             {
                 S3Action = s3Action,
@@ -55,13 +69,64 @@ namespace Wheeler.PictureAnalyzer
                 S3Object = record.S3.Object.Key
             };
 
-            // TODO: Load S3 Object
+            // read object from s3
+            byte[] s3ObjectBytes = ReadFromS3(response.S3Bucket, response.S3Object).Result;
 
-            // TODO: Send File to GCP Vision API
+            // process the object with gcp vision
+            SendToVision(s3ObjectBytes);
 
             // TODO: Write GCP Vision API Results to Azure Tables
 
             return response;
+        }
+
+
+        private async Task<byte[]> ReadFromS3(string s3Bucket, string s3Object)
+        {
+            GetObjectRequest request = new GetObjectRequest
+            {
+                BucketName = s3Bucket,
+                Key = s3Object
+            };
+
+            byte[] bytes = null;
+
+            try
+            {
+                using GetObjectResponse response = await s3Client.GetObjectAsync(request);
+                using Stream stream = response.ResponseStream;
+                using StreamReader reader = new StreamReader(stream);
+
+                string type = response.Headers["Content-Type"];
+                Console.WriteLine($"Content Type: {type}");
+
+                string content = reader.ReadToEnd();
+                bytes = Convert.FromBase64String(content);
+                Console.WriteLine($"Content Size: {bytes.Length}");
+
+                return bytes;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"ERROR: {e}");
+            }
+
+            return bytes ?? new byte[0];
+        }
+
+
+        private void SendToVision(byte[] bytes)
+        {
+            Image image = Image.FromBytes(bytes);
+
+            IReadOnlyList<EntityAnnotation> labels = visionClient.DetectLabels(image);
+            foreach(EntityAnnotation a in labels)
+            {
+                Console.WriteLine($"Description: {a.Description}");
+                Console.WriteLine($"Locale: {a.Locale}");
+                Console.WriteLine($"Score: {a.Score}");
+                Console.WriteLine($"Topicality: {a.Topicality}");
+            }
         }
     }
 }
