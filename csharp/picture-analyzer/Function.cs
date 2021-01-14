@@ -10,6 +10,8 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Google.Cloud.Vision.V1;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -21,9 +23,17 @@ namespace Wheeler.PictureAnalyzer
     public class Function
     {
 
+        // aws variables
         private static readonly RegionEndpoint awsRegion = RegionEndpoint.USEast1;
-        private static IAmazonS3 s3Client;
-        private static ImageAnnotatorClient visionClient;
+        private static IAmazonS3 awsS3Client;
+
+        // azure variables
+        private static CloudStorageAccount azureStorage;
+        private static CloudTableClient azureTablesClient;
+        private static CloudTable azureTable;
+        
+        // gcp variables
+        private static ImageAnnotatorClient gcpVisionClient;
 
 
         /// <summary>
@@ -33,14 +43,11 @@ namespace Wheeler.PictureAnalyzer
         /// <param name="request">the aws event that triggered this aws lambda function</param>
         /// <param name="context">the aws lambda context</param>
         /// <returns>a list of response instances</returns>
-        public List<Response> FunctionHandler(JObject request, ILambdaContext context)
+        public List<AnalysisEntity> FunctionHandler(JObject request, ILambdaContext context)
         {
-            // set environment variables
-            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "creds/gcp-vision-svc.json");
-
-            // create cloud clients
-            s3Client ??= new AmazonS3Client(awsRegion);
-            visionClient ??= ImageAnnotatorClient.Create();
+            InitAWS();
+            InitAzure();
+            InitGCP();
 
             // convert the request into an s3 event 
             S3EventNotification s3Event = request.ToObject<S3EventNotification>();
@@ -49,7 +56,29 @@ namespace Wheeler.PictureAnalyzer
             return s3Event.Records.Select(i => ProcessRecord(i)).ToList();
         }
 
-        private Response ProcessRecord(S3EventNotification.S3EventNotificationRecord record)
+        private void InitAWS()
+        {
+            awsS3Client ??= new AmazonS3Client(awsRegion);
+        }
+
+        private void InitAzure()
+        {
+            JObject azureJson = JObject.Parse(File.ReadAllText("creds/azure-tables-svc.json"));
+            string connectionString = azureJson["ConnectionString"].Value<string>();
+            string tableName = azureJson["TableName"].Value<string>();
+            
+            azureStorage ??= CloudStorageAccount.Parse(connectionString);
+            azureTablesClient ??= azureStorage.CreateCloudTableClient();
+            azureTable ??= azureTablesClient.GetTableReference(tableName);
+        }
+
+        private void InitGCP()
+        {
+            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "creds/gcp-vision-svc.json");
+            gcpVisionClient ??= ImageAnnotatorClient.Create();
+        }
+
+        private AnalysisEntity ProcessRecord(S3EventNotification.S3EventNotificationRecord record)
         {
             // extract event details
             string s3ActionName = record.EventName;
@@ -57,7 +86,7 @@ namespace Wheeler.PictureAnalyzer
             string s3ObjectName = record.S3.Object.Key;
 
             // form response with event details
-            Response response = new Response
+            AnalysisEntity response = new AnalysisEntity
             {
                 S3ActionName = s3ActionName,
                 S3BucketName = s3BucketName,
@@ -71,7 +100,7 @@ namespace Wheeler.PictureAnalyzer
             {
                 string error = $"Expected: {xpActionName}; Received: {s3ActionName}";
                 LambdaLogger.Log(error);
-                return new Response(false, error);
+                return new AnalysisEntity(false, error);
             }
 
             // read object from s3
@@ -100,7 +129,7 @@ namespace Wheeler.PictureAnalyzer
 
             try
             {
-                using GetObjectResponse response = await s3Client.GetObjectAsync(request);
+                using GetObjectResponse response = await awsS3Client.GetObjectAsync(request);
                 using Stream stream = response.ResponseStream;
                 using MemoryStream memory = new MemoryStream();
 
@@ -134,8 +163,8 @@ namespace Wheeler.PictureAnalyzer
         private VisionAnalysis SendToVision(byte[] bytes)
         {
             Image image = Image.FromBytes(bytes);
-            SafeSearchAnnotation safeSearch = visionClient.DetectSafeSearch(image);
-            IReadOnlyList<EntityAnnotation> labels = visionClient.DetectLabels(image);
+            SafeSearchAnnotation safeSearch = gcpVisionClient.DetectSafeSearch(image);
+            IReadOnlyList<EntityAnnotation> labels = gcpVisionClient.DetectLabels(image);
             return new VisionAnalysis(safeSearch, labels);
         }
     }
