@@ -113,8 +113,8 @@ namespace Wheeler.PictureAnalyzer
 
             response.VisionAnalysis = analysis;
 
-            // TODO: Write GCP Vision API Results to Azure Tables
-
+            // save to azure tables
+            SaveToDatabase(response);
             return response;
         }
 
@@ -159,6 +159,27 @@ namespace Wheeler.PictureAnalyzer
             }
         }
 
+        private void SaveToDatabase(AnalysisEntity entity)
+        {
+            TableOperation operation = TableOperation.Insert(entity);
+            TableResult result = azureTable.ExecuteAsync(operation).Result;
+            
+            if(result != null && result.HttpStatusCode == 204)
+            {
+                LambdaLogger.Log($"Entity {entity.RowKey} Saved");
+            }
+            else
+            {
+                LambdaLogger.Log($"HttpStatusCode: {result.HttpStatusCode}");
+                LambdaLogger.Log($"Result: {result.Result}");
+                
+                string errorMessage = $"Entity {entity.RowKey} Failed to Save";
+                LambdaLogger.Log(errorMessage);
+
+                entity.ErrorMessage = errorMessage;
+                entity.Success = false;
+            }
+        }
 
         private VisionAnalysis SendToVision(byte[] bytes)
         {

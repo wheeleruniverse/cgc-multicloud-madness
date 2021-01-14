@@ -13,6 +13,7 @@ namespace Wheeler.PictureAnalyzer
         public VisionAnalysis VisionAnalysis { get; set; }
         public bool Success { get; set; }
         public string ErrorMessage { get; set; }
+        
 
         public AnalysisEntity(bool success, string errorMessage)
         {
