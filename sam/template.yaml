@@ -1,60 +1,50 @@
 AWSTemplateFormatVersion: 2010-09-09
+Description: creates a serverless api that returns pre-signed urls
 Transform: AWS::Serverless-2016-10-31
-Description: S3 Uploader - sample application
 
 Resources:
-  # HTTP API
-  MyApi:
+  rAuthApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      # CORS configuration - this is open for development only and should be restricted in prod.
-      # See https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-httpapi-httpapicorsconfiguration.html   
       CorsConfiguration:
+        AllowHeaders:
+          - "*"   
         AllowMethods:
           - GET
           - POST
-          - DELETE
           - OPTIONS
-        AllowHeaders:
-          - "*"   
         AllowOrigins: 
-          - "*"      
+          - "d1p4etgsrvfxla.cloudfront.net"
 
-  ## Lambda functions
-  UploadRequestFunction:
-    # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  rAuthFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: getSignedURL/
-      Handler: app.handler
-      Runtime: nodejs12.x
-      Timeout: 3
-      MemorySize: 128
+      CodeUri: code/
       Environment:
         Variables:
-          UploadBucket: !Ref S3UploadBucket  
-      Policies:
-        - S3WritePolicy:
-            BucketName: !Ref S3UploadBucket
-        ## This permission allows the Lambda function to request signed URLs
-        ## for objects that will be publicly readable. Uncomment if you want this ACL.
-        # - Statement:
-        #   - Effect: Allow
-        #     Resource: !Sub 'arn:aws:s3:::${S3UploadBucket}/'
-        #     Action:
-        #       - s3:putObjectAcl
+          UploadBucket: !Ref rPictureBucket  
       Events:
         UploadAssetAPI:
           Type: HttpApi
           Properties:
-            Path: /uploads
-            Method: get
-            ApiId: !Ref MyApi  
-
-  ## S3 bucket
-  S3UploadBucket:
+            ApiId: !Ref rAuthApi
+            Method: GET
+            Path: /auth
+      FunctionName: cgc0121-auth
+      Handler: auth.handler
+      MemorySize: 128
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref rPictureBucket
+        - S3WritePolicy:
+            BucketName: !Ref rPictureBucket
+      Runtime: nodejs12.x
+      Timeout: 5
+            
+  rPictureBucket:
     Type: AWS::S3::Bucket
     Properties:
+      BucketName: wheeler-cgc0121-pictures
       CorsConfiguration:
         CorsRules:
         - AllowedHeaders:
@@ -62,16 +52,14 @@ Resources:
           AllowedMethods:
             - GET
             - PUT
-            - HEAD
           AllowedOrigins:
-            - "*"
+            - "d1p4etgsrvfxla.cloudfront.net"
 
-## Take a note of the outputs for deploying the workflow templates in this sample application
 Outputs:
-  APIendpoint:
-    Description: "HTTP API endpoint URL"
-    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
-  S3UploadBucketName:
-    Description: "S3 bucket for application uploads"
-    Value: !Ref 'S3UploadBucket'    
+  oAuthApiEndpoint:
+    Description: Auth API Endpoint
+    Value: !Sub "https://${rAuthApi}.execute-api.${AWS::Region}.amazonaws.com"
+  oPictureBucket:
+    Description: S3 Bucket for Storing Pictures
+    Value: !Ref rPictureBucket
 
