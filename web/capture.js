@@ -62,7 +62,7 @@ function() {
         var context = canvas.getContext('2d');
         context.drawImage(video, 0, 0, width, height);
 
-        $.get('https://v85bx861bh.execute-api.us-east-1.amazonaws.com/uploads', function(data, status){
+        $.get('https://8rhqieqz48.execute-api.us-east-1.amazonaws.com/auth', function(data, status){
             
             if ("success" === status){
                 
