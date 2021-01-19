@@ -61,19 +61,27 @@ function() {
         
         var context = canvas.getContext('2d');
         context.drawImage(video, 0, 0, width, height);
-
+        
+        
         $.get('https://8rhqieqz48.execute-api.us-east-1.amazonaws.com/auth', function(data, status){
             
             if ("success" === status){
                 
-                $.ajax({
-                    url: data['uploadURL'],
-                    type: 'PUT',
-                    contentType: 'application/octet-stream',  
-                    data: canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream'),
-                    processData: false
-                });
-                
+                canvas.toBlob(function(b) {
+                    
+                    if(b === null){
+                        console.log("ERROR: Blob is null");
+                        return;
+                    }
+                    $.ajax({
+                        url: data['uploadURL'],
+                        type: 'PUT',
+                        contentType: 'image/png',  
+                        data: b,
+                        processData: false
+                    });
+                    
+                });                
             }
             else {
                 console.log("ERROR: " + status);
