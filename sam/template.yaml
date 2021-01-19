@@ -14,7 +14,7 @@ Resources:
           - POST
           - OPTIONS
         AllowOrigins: 
-          - "d1p4etgsrvfxla.cloudfront.net"
+          - "*"
 
   rAuthFunction:
     Type: AWS::Serverless::Function 
@@ -53,7 +53,7 @@ Resources:
             - GET
             - PUT
           AllowedOrigins:
-            - "d1p4etgsrvfxla.cloudfront.net"
+            - "*"
 
 Outputs:
   oAuthApiEndpoint:
