@@ -1,6 +1,16 @@
 <div class="navbar">
-    <a href="C:/Users/Jwhee/Documents/CloudGuruChallenge_0121/web/index.html" class="active">home</a>
+    <a href="C:/Users/Jwhee/Documents/CloudGuruChallenge_0121/web/index.html">home</a>
     <a href="C:/Users/Jwhee/Documents/CloudGuruChallenge_0121/web/html/browse.html">browse</a>
     <a href="C:/Users/Jwhee/Documents/CloudGuruChallenge_0121/web/html/selfie.html">#selfie</a>
 </div>
 <h1>Multi Cloud Picture Analyzer</h1>
+<script>
+    $(document).ready(function() {
+        
+        var url = window.location;
+        var cur = $('.navbar a').filter(function() {
+            return this.href == url;
+        });
+        cur.addClass('active');
+    });
+</script>
