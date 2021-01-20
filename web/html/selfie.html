@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+	<title>Multi Cloud Picture Analyzer</title>
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="../css/main.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+	<script src="../js/capture.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <div id="header"></div>
+    <div id="alert" class="alert" role="alert"></div>
+    <div id="content">
+        <div>
+            <video id="video">Video Not Available</video>
+            <button id="start-btn" disabled>Analyze</button> 
+        </div>
+        <canvas id="canvas"></canvas>
+    </div>
+    <div id="footer"></div>
+    <script>
+    $(function(){
+        $("#header").load("header.html");
+        $("#footer").load("footer.html");
+    });
+    </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ function() {
     var width = 640;    
          
     // document elements
+    var alert = null;
     var button = null;
     var canvas = null;
     var video = null;
@@ -17,6 +18,7 @@ function() {
     function startup() {
         
         // find elements
+        alert = document.getElementById('alert');
         button = document.getElementById('start-btn');
         canvas = document.getElementById('canvas');
         video = document.getElementById('video');
@@ -25,9 +27,10 @@ function() {
         navigator.mediaDevices.getUserMedia({video: true, audio: false}).then(function(stream) {
             video.srcObject = stream;
             video.play();
+            button.disabled = false;
         })
         .catch(function(err) {
-            console.log("ERROR: " + err);
+            updateAlert(err, false);
         });
 
 
@@ -62,7 +65,6 @@ function() {
         var context = canvas.getContext('2d');
         context.drawImage(video, 0, 0, width, height);
         
-        
         $.get('https://8rhqieqz48.execute-api.us-east-1.amazonaws.com/auth', function(data, status){
             
             if ("success" === status){
@@ -70,7 +72,7 @@ function() {
                 canvas.toBlob(function(b) {
                     
                     if(b === null){
-                        console.log("ERROR: Blob is null");
+                        updateAlert('image blob is invalid', false);
                         return;
                     }
                     $.ajax({
@@ -81,12 +83,30 @@ function() {
                         processData: false
                     });
                     
+                    updateAlert('image captured', true);
                 });                
             }
             else {
-                console.log("ERROR: " + status);
+                updateAlert('authentication api failed', false);
             }
         });
+    }
+    
+    
+    function updateAlert(message, isSuccess){
+        
+        var alertType = isSuccess ? "success" : "failure";
+        var alertText = alertType + ":" + message;
+        
+        if(!isSuccess){
+            console.log(alertText);
+        }
+        
+        alert.classList.remove('alert-danger');
+        alert.classList.remove('alert-success');
+        
+        alert.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
+        alert.innerHTML = alertText;
     }
 
     window.addEventListener('load', startup, false);
