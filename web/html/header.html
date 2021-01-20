@@ -1,16 +1,32 @@
 <div class="navbar">
-    <a href="C:/Users/Jwhee/Documents/CloudGuruChallenge_0121/web/index.html">home</a>
-    <a href="C:/Users/Jwhee/Documents/CloudGuruChallenge_0121/web/html/browse.html">browse</a>
-    <a href="C:/Users/Jwhee/Documents/CloudGuruChallenge_0121/web/html/selfie.html">#selfie</a>
+    <a id="nav_home">home</a>
+    <a id="nav_browse">browse</a>
+    <a id="nav_selfie">#selfie</a>
 </div>
 <h1>Multi Cloud Picture Analyzer</h1>
 <script>
     $(document).ready(function() {
         
-        var url = window.location;
-        var cur = $('.navbar a').filter(function() {
-            return this.href == url;
+        var href = window.location.href;
+        var root = href.substr(0, href.indexOf("web/"));
+        
+        $('.navbar a').each(function(){
+        
+            // set href
+            if ("nav_home" === this.id){
+                this.href = root + "web/index.html";
+            }
+            else if ("nav_browse" === this.id){
+                this.href = root + "web/html/browse.html";
+            }
+            else if ("nav_selfie" === this.id){
+                this.href = root + "web/html/selfie.html";
+            }
+            
+            // set active
+            if (this.href === href){
+                $(this).addClass('active');
+            }
         });
-        cur.addClass('active');
     });
 </script>
