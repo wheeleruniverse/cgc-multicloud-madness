@@ -1,8 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.Lambda.Core;
@@ -12,7 +12,6 @@ using Amazon.S3.Util;
 using Google.Cloud.Vision.V1;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -161,6 +160,10 @@ namespace Wheeler.PictureAnalyzer
 
         private void SaveToDatabase(AnalysisEntity entity)
         {
+            // serialize list before saving
+            entity.SerializedVisionAnalysis = JsonSerializer.Serialize(entity.VisionAnalysis);
+
+            // insert into the database
             TableOperation operation = TableOperation.Insert(entity);
             TableResult result = azureTable.ExecuteAsync(operation).Result;
             

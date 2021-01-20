@@ -1,19 +1,38 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Wheeler.PictureAnalyzer
 {
     public class AnalysisEntity : TableEntity
     {
-        public string S3ActionName { get; set; }
+        // _______________________________________________________________
+        // Database Fields
+
         public string S3BucketName { get; set; }
-        public string S3ObjectName { get; set; }
-        public VisionAnalysis VisionAnalysis { get; set; }
-        public bool Success { get; set; }
-        public string ErrorMessage { get; set; }
         
+        public string S3ObjectName { get; set; }
+
+        public string SerializedVisionAnalysis { get; set; }
+
+
+        // _______________________________________________________________
+        // Ignored Fields
+
+        [IgnoreProperty]
+        public string S3ActionName { get; set; }
+
+        [IgnoreProperty]
+        public string ErrorMessage { get; set; }
+
+        [IgnoreProperty]
+        public bool Success { get; set; }
+
+        [IgnoreProperty]
+        public VisionAnalysis VisionAnalysis { get; set; }
+
+
+        // _______________________________________________________________
+        // Constructors
 
         public AnalysisEntity(bool success, string errorMessage)
         {

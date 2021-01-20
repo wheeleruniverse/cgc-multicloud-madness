@@ -1,0 +1,15 @@
+{
+   "Records":[
+      {
+         "eventName":"ObjectCreated:Put",
+         "s3":{
+            "bucket":{
+               "name":"wheeler-cgc0121-pictures"
+            },
+            "object":{
+               "key":"448247.png"
+            }
+         }
+      }
+   ]
+}
