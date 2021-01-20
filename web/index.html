@@ -3,7 +3,6 @@
 <head>
 	<title>Multi Cloud Picture Analyzer</title>
 	<meta charset="utf-8">
-	<link rel="stylesheet" type="text/css" href="css/main.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
@@ -13,7 +12,16 @@
     </div>
     <script>
     $(function(){
-        $("#header").load("html/header.html");
+        
+        var href = window.location.href;
+        if (href.indexOf('web/') === -1){
+            $('head').append('<link rel="stylesheet" type="text/css" href="web/css/main.css">');
+            $("#header").load("web/html/header.html");
+        }
+        else {
+            $('head').append('<link rel="stylesheet" type="text/css" href="css/main.css">');
+            $("#header").load("html/header.html");
+        }
     });
     </script>
 </body>
