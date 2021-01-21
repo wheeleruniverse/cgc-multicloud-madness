@@ -5,13 +5,7 @@ function() {
         
         var analysisUrl = [];
         analysisUrl.push(
-            "https://wheelerpictureanalyzer.table.core.windows.net/analysis?",
-            "$filter=PartitionKey%20eq%20'2021-01-20'&",
-            "$top=10&",
-            "si=analysis-ui&",
-            "sig=hjsM0w4z8gxANMxrKmOMYLKoS%2BWWfInAo0hd%2BUm6lYc%3D&",
-            "sv=2018-03-28&",
-            "tn=analysis"
+
         );
         
         $.ajax({
