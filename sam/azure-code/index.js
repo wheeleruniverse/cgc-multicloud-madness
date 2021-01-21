@@ -1,8 +1,10 @@
 'use strict'
 
+// npm dependencies
 const axios = require('axios');
-const auth = require('creds/auth.json');
 
+// local dependencies
+const auth = require('creds/auth.json');
 
 // AWS Lambda entry point
 exports.handler = async (event) => {
@@ -14,28 +16,23 @@ const queryAzureAnalysisTable = async function(event) {
     const filter = `PartitionKey%20eq%20'${randomNumberBetween(1, 10)}'`
     console.log(`filter: ${filter}`);
 
-    axios.get(auth.url, {
-        headers: {
-            'Accept': 'application/json;odata=nometadata'
-        },
-        params: {
-            '$filter': filter,
-            '$top': '50',
-            'si': auth.si,
-            'sig': auth.sig,
-            'sv': auth.sv,
-            'tn': auth.tn,
-        }
-    })
-    .then(function (response) {
-        console.log(response);
-        console.log(`Found ${response.length} Records`);
-        return response;
-    })
-    .catch(function (error) {
-        console.error(error);
-        return error;
-    })
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                'Accept': 'application/json;odata=nometadata'
+            }
+        })
+        console.log(`HTTP ${response.status}`)
+        
+        const data = response.data.value;
+        console.log(`Found ${data.length} Records`);
+        
+        return data;
+    } 
+    catch (e) {
+        console.error(e)
+        return [];
+    }
 }
 
 
