@@ -4,27 +4,6 @@ function() {
     function startup() {
         
         queryAzureAnalysisTable(drawResults);
-        
-        /*
-        var analysisUrl = [];
-        analysisUrl.push(
-
-        );
-        
-        $.ajax({
-            url: analysisUrl.join(""),
-            type: "GET",
-            beforeSend: function(xhr){
-                xhr.setRequestHeader('Accept', 'application/json;odata=nometadata');
-            },
-            success: function(data) { 
-                drawResults(data.value);
-            },
-            error: function (xhr, status, error) {
-                console.log("error: " + error);
-            }
-        });
-        */
     }
     
     
