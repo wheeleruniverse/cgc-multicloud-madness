@@ -1,0 +1,15 @@
+{
+  "name": "cgc0121-getAmazonPresignedUrl",
+  "version": "1.0.0",
+  "description": "generates presigned urls for accessing aws s3 securely",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Justin Wheeler",
+  "license": "MIT-0",
+  "dependencies": {
+    "aws-sdk": "^2.749.0"
+  }
+}

@@ -3,7 +3,7 @@ Description: creates a serverless api that returns pre-signed urls
 Transform: AWS::Serverless-2016-10-31
 
 Resources:
-  rAuthApi:
+  rApi:
     Type: AWS::Serverless::HttpApi
     Properties:
       CorsConfiguration:
@@ -14,30 +14,50 @@ Resources:
           - POST
           - OPTIONS
         AllowOrigins: 
-          - "*"
+          - "https://d1p4etgsrvfxla.cloudfront.net"
 
-  rAuthFunction:
+  rAmazonAuthFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: code/
+      CodeUri: aws-code/
       Environment:
         Variables:
-          UploadBucket: !Ref rPictureBucket  
+          rPictureBucket: !Ref rPictureBucket  
       Events:
-        UploadAssetAPI:
+        ApiEvent:
           Type: HttpApi
           Properties:
-            ApiId: !Ref rAuthApi
+            ApiId: !Ref rApi
             Method: GET
-            Path: /auth
-      FunctionName: cgc0121-auth
-      Handler: auth.handler
+            Path: /getAmazonPresignedUrls
+      FunctionName: cgc0121-getAmazonPresignedUrl
+      Handler: index.handler
       MemorySize: 128
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref rPictureBucket
         - S3WritePolicy:
             BucketName: !Ref rPictureBucket
+      Runtime: nodejs12.x
+      Timeout: 5
+
+  rAzureTableFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: azure-code/
+      Environment:
+        Variables:
+          UploadBucket: !Ref rPictureBucket  
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref rApi
+            Method: GET
+            Path: /queryAzureAnalysisTable
+      FunctionName: cgc0121-queryAzureAnalysisTable
+      Handler: index.handler
+      MemorySize: 128
       Runtime: nodejs12.x
       Timeout: 5
             
@@ -56,9 +76,9 @@ Resources:
             - "*"
 
 Outputs:
-  oAuthApiEndpoint:
+  oApiEndpoint:
     Description: Auth API Endpoint
-    Value: !Sub "https://${rAuthApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Value: !Sub "https://${rApi}.execute-api.${AWS::Region}.amazonaws.com"
   oPictureBucket:
     Description: S3 Bucket for Storing Pictures
     Value: !Ref rPictureBucket
