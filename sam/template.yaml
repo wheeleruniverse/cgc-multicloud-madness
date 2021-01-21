@@ -29,7 +29,7 @@ Resources:
           Properties:
             ApiId: !Ref rApi
             Method: GET
-            Path: /getAmazonPresignedUrls
+            Path: /getAmazonPresignedUrl
       FunctionName: cgc0121-getAmazonPresignedUrl
       Handler: index.handler
       MemorySize: 128
@@ -45,9 +45,6 @@ Resources:
     Type: AWS::Serverless::Function 
     Properties:
       CodeUri: azure-code/
-      Environment:
-        Variables:
-          UploadBucket: !Ref rPictureBucket  
       Events:
         ApiEvent:
           Type: HttpApi
