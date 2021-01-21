@@ -48,6 +48,12 @@
     width: 640px;
 }
 
+.data-record {
+    border: 1px solid black;
+    padding: 1em;
+    text-align: left;
+}
+
 .navbar {
     background-color: #333;
     overflow: hidden;
