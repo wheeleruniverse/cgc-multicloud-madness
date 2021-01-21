@@ -17,14 +17,14 @@ const getSignedUrl = async function(event) {
     const params = {
         Bucket: process.env.rPictureBucket,
         Key: objectId,
-        Expires: 300,
+        Expires: 90,
         ContentType: 'image/png'
     }
     console.log(`Params: ${params}`)
     
     const url = await s3.getSignedUrlPromise('putObject', params);
-    return JSON.stringify({
+    return {
         Key: objectId,
         Url: url
-    })
+    }
 }
