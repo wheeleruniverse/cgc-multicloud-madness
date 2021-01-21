@@ -15,11 +15,15 @@ Resources:
           - OPTIONS
         AllowOrigins: 
           - "https://d1p4etgsrvfxla.cloudfront.net"
+      Description: serverless api for cgc0121
+      Tags:
+        Project: CloudGuruChallenge0121
 
   rAmazonAuthFunction:
     Type: AWS::Serverless::Function 
     Properties:
       CodeUri: aws-code/
+      Description: serverless function to generate presigned urls for aws s3
       Environment:
         Variables:
           rPictureBucket: !Ref rPictureBucket  
@@ -39,12 +43,15 @@ Resources:
         - S3WritePolicy:
             BucketName: !Ref rPictureBucket
       Runtime: nodejs12.x
+      Tags:
+        Project: CloudGuruChallenge0121
       Timeout: 5
 
   rAzureTableFunction:
     Type: AWS::Serverless::Function 
     Properties:
       CodeUri: azure-code/
+      Description: serverless function to query the analysis table stored in azure tables storage
       Events:
         ApiEvent:
           Type: HttpApi

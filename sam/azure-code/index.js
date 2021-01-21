@@ -15,8 +15,9 @@ const queryAzureAnalysisTable = async function(event) {
     
     const filter = `PartitionKey%20eq%20'${randomNumberBetween(1, 10)}'`
     console.log(`filter: ${filter}`);
-
+    
     try {
+        const url = `${auth.url}&$filter=${filter}&$top=50`
         const response = await axios.get(url, {
             headers: {
                 'Accept': 'application/json;odata=nometadata'
