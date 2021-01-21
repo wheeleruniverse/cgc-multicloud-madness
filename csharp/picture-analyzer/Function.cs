@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Amazon;
 using Amazon.Lambda.Core;
 using Amazon.S3;
@@ -55,11 +54,18 @@ namespace Wheeler.PictureAnalyzer
             return s3Event.Records.Select(i => ProcessRecord(i)).ToList();
         }
 
+
+        /// <summary>
+        /// initializes aws resources
+        /// </summary>
         private void InitAWS()
         {
             awsS3Client ??= new AmazonS3Client(awsRegion);
         }
 
+        /// <summary>
+        /// initializes azure resources
+        /// </summary>
         private void InitAzure()
         {
             JObject azureJson = JObject.Parse(File.ReadAllText("creds/azure-tables-svc.json"));
@@ -71,12 +77,20 @@ namespace Wheeler.PictureAnalyzer
             azureTable ??= azureTablesClient.GetTableReference(tableName);
         }
 
+        /// <summary>
+        /// initializes gcp resources
+        /// </summary>
         private void InitGCP()
         {
             Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "creds/gcp-vision-svc.json");
             gcpVisionClient ??= ImageAnnotatorClient.Create();
         }
 
+        /// <summary>
+        /// processes a single s3 event notification record to support batching
+        /// </summary>
+        /// <param name="record">the s3 event notification record to process</param>
+        /// <returns>an entity that matches the data saved in azure tables storage</returns> 
         private AnalysisEntity ProcessRecord(S3EventNotification.S3EventNotificationRecord record)
         {
             // extract event details
@@ -97,28 +111,60 @@ namespace Wheeler.PictureAnalyzer
             string xpActionName = "ObjectCreated:Put";
             if (!s3ActionName.Equals(xpActionName))
             {
-                string error = $"Expected: {xpActionName}; Received: {s3ActionName}";
+                string error = $"ERROR : Expected: {xpActionName}; Received: {s3ActionName}";
                 LambdaLogger.Log(error);
                 return new AnalysisEntity(false, error);
             }
 
             // read object from s3
-            InMemoryObject s3Object = ReadFromS3(s3BucketName, s3ObjectName).Result;
+            InMemoryObject s3Object = GetObject(s3BucketName, s3ObjectName);
             LambdaLogger.Log(s3Object.ToString());
 
             // process the object with gcp vision
-            VisionAnalysis analysis = SendToVision(s3Object.Data);
+            VisionAnalysis analysis = Analyze(s3Object.Data);
             LambdaLogger.Log(analysis.ToString());
 
             response.VisionAnalysis = analysis;
+            response.SerializedVisionAnalysis = JsonSerializer.Serialize(analysis);
 
             // save to azure tables
-            SaveToDatabase(response);
+            AnalysisEntity entity = QueryEntity();
+            if (entity == null)
+            {
+                // table is empty (load all 9 partitions)
+                for (int i = 1; i <= 9; i++)
+                {
+                    response.PartitionKey = i.ToString();
+                    InsertEntity(response);
+                }
+            }
+            else
+            {
+                InsertEntity(response);
+            }
             return response;
         }
 
+        /// <summary>
+        /// analyzes the bytes provided with the gcp vision service
+        /// </summary>
+        /// <param name="bytes">the bytes of an image to process</param>
+        /// <returns>the gcp vision results</returns>
+        private VisionAnalysis Analyze(byte[] bytes)
+        {
+            Image image = Image.FromBytes(bytes);
+            SafeSearchAnnotation safeSearch = gcpVisionClient.DetectSafeSearch(image);
+            IReadOnlyList<EntityAnnotation> labels = gcpVisionClient.DetectLabels(image);
+            return new VisionAnalysis(safeSearch, labels);
+        }
 
-        private async Task<InMemoryObject> ReadFromS3(string s3Bucket, string s3Object)
+        /// <summary>
+        /// loads an object from s3 into memory using the provided parameters
+        /// </summary>
+        /// <param name="s3Bucket">the s3 bucket to read</param>
+        /// <param name="s3Object">the s3 object to read</param>
+        /// <returns>an object that contains the s3 object in bytes along with information about the s3 object</returns>
+        private InMemoryObject GetObject(string s3Bucket, string s3Object)
         {
             GetObjectRequest request = new GetObjectRequest
             {
@@ -128,7 +174,7 @@ namespace Wheeler.PictureAnalyzer
 
             try
             {
-                using GetObjectResponse response = await awsS3Client.GetObjectAsync(request);
+                using GetObjectResponse response = awsS3Client.GetObjectAsync(request).Result;
                 using Stream stream = response.ResponseStream;
                 using MemoryStream memory = new MemoryStream();
 
@@ -153,43 +199,59 @@ namespace Wheeler.PictureAnalyzer
             }
             catch(Exception e)
             {
-                LambdaLogger.Log($"ERROR: {e}");
+                LambdaLogger.Log($"ERROR : {e}");
                 throw;
             }
         }
 
-        private void SaveToDatabase(AnalysisEntity entity)
+        /// <summary>
+        /// inserts the provided entity into azure tables storage
+        /// </summary>
+        /// <param name="entity">the entity to insert</param>
+        private void InsertEntity(AnalysisEntity entity)
         {
-            // serialize list before saving
-            entity.SerializedVisionAnalysis = JsonSerializer.Serialize(entity.VisionAnalysis);
-
             // insert into the database
             TableOperation operation = TableOperation.Insert(entity);
             TableResult result = azureTable.ExecuteAsync(operation).Result;
             
             if(result != null && result.HttpStatusCode == 204)
             {
-                LambdaLogger.Log($"Entity {entity.RowKey} Saved");
+                LambdaLogger.Log($"Entity: Success: [{entity.PartitionKey}]{entity.RowKey}");
             }
             else
             {
-                LambdaLogger.Log($"HttpStatusCode: {result.HttpStatusCode}");
+                LambdaLogger.Log($"Status: {result.HttpStatusCode}");
                 LambdaLogger.Log($"Result: {result.Result}");
                 
-                string errorMessage = $"Entity {entity.RowKey} Failed to Save";
+                string errorMessage = $"Entity: Failure: [{entity.PartitionKey}]{entity.RowKey}";
                 LambdaLogger.Log(errorMessage);
 
                 entity.ErrorMessage = errorMessage;
                 entity.Success = false;
             }
         }
-
-        private VisionAnalysis SendToVision(byte[] bytes)
+        
+        /// <summary>
+        /// queries the first record in azure tables storage
+        /// </summary>
+        /// <returns>the entity found or null if the table is empty</returns>
+        private AnalysisEntity QueryEntity()
         {
-            Image image = Image.FromBytes(bytes);
-            SafeSearchAnnotation safeSearch = gcpVisionClient.DetectSafeSearch(image);
-            IReadOnlyList<EntityAnnotation> labels = gcpVisionClient.DetectLabels(image);
-            return new VisionAnalysis(safeSearch, labels);
+            AnalysisEntity[] entities = QueryEntity(1);
+            return entities.Length > 0 ? entities[0] : null;
+        }
+
+        /// <summary>
+        /// queries x record(s) from azure tables storage basd on the limit provided
+        /// </summary>
+        /// <param name="limit">the number of records to load from azure tables storage</param>
+        /// <returns>the record(s) found converted to an array</returns>
+        private AnalysisEntity[] QueryEntity(int limit)
+        {
+            // query from the database
+            TableQuery<AnalysisEntity> query = new TableQuery<AnalysisEntity>().Take(limit);
+            TableQuerySegment<AnalysisEntity> segment = azureTable.ExecuteQuerySegmentedAsync(query, null).Result;
+            return segment.ToArray<AnalysisEntity>();
         }
     }
 }

@@ -13,7 +13,8 @@ exports.handler = async (event) => {
 
 const queryAzureAnalysisTable = async function(event) {
     
-    const filter = `PartitionKey%20eq%20'${randomNumberBetween(1, 10)}'`
+    const partition = randomNumberBetween(1, 10);
+    const filter = `PartitionKey%20eq%20'${partition}'`
     console.log(`filter: ${filter}`);
     
     try {
@@ -28,11 +29,18 @@ const queryAzureAnalysisTable = async function(event) {
         const data = response.data.value;
         console.log(`Found ${data.length} Records`);
         
-        return data;
+        return {
+            Data: data,
+            Partition: partition
+        }
     } 
     catch (e) {
         console.error(e)
-        return [];
+        return {
+            Data: [],
+            Error: JSON.stringify(e),
+            Partition: partition
+        }
     }
 }
 

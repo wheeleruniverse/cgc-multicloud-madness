@@ -1,10 +1,13 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using System;
+using System.Text.Json;
 
 namespace Wheeler.PictureAnalyzer
 {
     public class AnalysisEntity : TableEntity
     {
+        private static readonly Random rnd = new Random();
+
         // _______________________________________________________________
         // Database Fields
 
@@ -36,7 +39,7 @@ namespace Wheeler.PictureAnalyzer
 
         public AnalysisEntity(bool success, string errorMessage)
         {
-            PartitionKey = DateTime.Now.ToString("yyyy-MM-dd");
+            PartitionKey = rnd.Next(1, 10).ToString();
             RowKey = Guid.NewGuid().ToString();
             Success = success;
             ErrorMessage = errorMessage;
@@ -44,6 +47,11 @@ namespace Wheeler.PictureAnalyzer
         public AnalysisEntity() : this(true, null)
         {
             // Default to Success
+        }
+
+        public override string ToString()
+        {
+            return JsonSerializer.Serialize(this);
         }
     }
 }

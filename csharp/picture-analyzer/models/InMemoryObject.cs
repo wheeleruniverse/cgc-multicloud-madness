@@ -11,10 +11,7 @@ namespace Wheeler.PictureAnalyzer
 
         public override string ToString()
         {
-            List<string> response = Headers.Select(i => $"Header: {i}").ToList();
-            response.Add($"Bytes : {Data.Length}");
-
-            return string.Join("\n", response);
+            return string.Join("\n", Headers.Select(i => $"Header: {i}").ToList());
         }
     }
 }
