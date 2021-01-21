@@ -3,6 +3,9 @@ function() {
 
     function startup() {
         
+        queryAzureAnalysisTable(drawResults);
+        
+        /*
         var analysisUrl = [];
         analysisUrl.push(
 
@@ -21,14 +24,15 @@ function() {
                 console.log("error: " + error);
             }
         });
+        */
     }
     
     
-    function drawResults(value){
+    function drawResults(data){
         
-        // var content = $('#content');
+        console.log(`Partition: ${data['Partition']}`);
         
-        $.each(value, function(idx, r){
+        $.each(data['Data'], function(idx, r){
             
             var labels = JSON.parse(r.SerializedVisionAnalysis).Labels;
             if(isUnsafe(labels)){

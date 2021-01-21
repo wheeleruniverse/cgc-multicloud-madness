@@ -16,7 +16,7 @@ function() {
 
 
     function startup() {
-        
+                
         // find elements
         alert = document.getElementById('alert');
         button = document.getElementById('start-btn');
@@ -65,10 +65,11 @@ function() {
         var context = canvas.getContext('2d');
         context.drawImage(video, 0, 0, width, height);
         
-        $.get('https://8rhqieqz48.execute-api.us-east-1.amazonaws.com/auth', function(data, status){
-            
-            if ("success" === status){
-                
+        
+        getAmazonPresignedUrl(
+        
+            // success
+            function(data){
                 canvas.toBlob(function(b) {
                     
                     if(b === null){
@@ -76,7 +77,7 @@ function() {
                         return;
                     }
                     $.ajax({
-                        url: data['uploadURL'],
+                        url: data['Url'],
                         type: 'PUT',
                         contentType: 'image/png',  
                         data: b,
@@ -84,12 +85,14 @@ function() {
                     });
                     
                     updateAlert('image captured', true);
-                });                
-            }
-            else {
+                });
+            },
+            
+            // failure
+            function(xhr, status, error){
                 updateAlert('authentication api failed', false);
             }
-        });
+        );
     }
     
     
