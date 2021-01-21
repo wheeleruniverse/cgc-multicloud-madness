@@ -13,7 +13,7 @@ exports.handler = async (event) => {
 const getSignedUrl = async function(event) {
     
     const randomId = parseInt(Math.random() * 10000000)
-    const objectId = `${randomID}.png`
+    const objectId = `${randomId}.png`
     const params = {
         Bucket: process.env.rPictureBucket,
         Key: objectId,
