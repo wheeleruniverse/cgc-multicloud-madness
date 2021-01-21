@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
+
 Description: creates a serverless api that returns pre-signed urls
+
 Transform: AWS::Serverless-2016-10-31
 
 Resources:
@@ -15,7 +17,6 @@ Resources:
           - OPTIONS
         AllowOrigins: 
           - "https://d1p4etgsrvfxla.cloudfront.net"
-      Description: serverless api for cgc0121
       Tags:
         Project: CloudGuruChallenge0121
 
@@ -78,6 +79,9 @@ Resources:
             - PUT
           AllowedOrigins:
             - "*"
+      Tags: 
+        - Key: Project
+          Value: CloudGuruChallenge0121
 
 Outputs:
   oApiEndpoint:
