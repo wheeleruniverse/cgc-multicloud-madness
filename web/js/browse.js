@@ -3,27 +3,42 @@ function() {
 
     function startup() {
         
-        queryAzureAnalysisTable(drawResults);
+        getAmazonPresignedUrl(getAuth);
     }
     
     
-    function drawResults(data){
+    function getAuth(auth){
         
-        console.log(`Partition: ${data['Partition']}`);
+        queryAzureAnalysisTable(getData, null, auth);
+    }
+    
+    function getData(data, auth){
+        
+       
+        var s3Signature = auth['Url'].substr(auth['Url'].indexOf('?'));
         
         $.each(data['Data'], function(idx, r){
             
             var labels = JSON.parse(r.SerializedVisionAnalysis).Labels;
-            if(isUnsafe(labels)){
+            if (isUnsafe(labels)){
                 return true; // continue
             }
             
             var key = r.PartitionKey + "_" + r.RowKey;
+            var keySelector = "#" + key;
+            
             $("<div/>", {
                 "id": key,
                 "class": "data-record"
             })
             .appendTo("#content");
+            
+            $("<img/>", {
+                "src": auth['Url']
+                // "src": `https://${r.S3BucketName}.s3.amazonaws.com/${r.S3ObjectName}${s3Signature}`
+            })
+            .appendTo(keySelector);
+            
                         
             $("<span/>", {"html": "Index: " + idx + "<br/>"}).appendTo("#" + key);
             $("<span/>", {"html": "PartitionKey: " + r.PartitionKey + "<br/>"}).appendTo("#" + key);

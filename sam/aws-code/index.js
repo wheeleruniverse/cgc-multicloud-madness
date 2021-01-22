@@ -12,19 +12,36 @@ exports.handler = async (event) => {
 
 const getSignedUrl = async function(event) {
     
-    const randomId = parseInt(Math.random() * 10000000)
-    const objectId = `${randomId}.png`
-    const params = {
-        Bucket: process.env.rPictureBucket,
-        Key: objectId,
-        Expires: 90,
-        ContentType: 'image/png'
-    }
-    console.log(`Params: ${params}`)
+    // query parameters
+    let queryParameters = event.queryStringParameters;
+    let bucketName = queryParameters ? queryParameters["bucketName"] : null;
+    let objectName = queryParameters ? queryParameters["objectName"] : null;
     
-    const url = await s3.getSignedUrlPromise('putObject', params);
+    let methodName;
+    let objectType = null;
+    
+    if (bucketName && objectName){
+        methodName = "getObject";
+    }
+    else {
+        bucketName = process.env.rPictureBucket;
+        methodName = "putObject";
+        objectName = `${parseInt(Math.random() * 10000000)}.png`
+        objectType = "image/png";
+    }
+    
+    let url = await s3.getSignedUrlPromise(methodName, {
+        Bucket: bucketName,
+        ...(objectType && {ContentType: objectType}),
+        Expires: 90,
+        Key: objectName
+    });
+    
     return {
-        Key: objectId,
+        BucketName: bucketName,
+        MethodName: methodName,
+        ObjectName: objectName,
+        ObjectType: objectType,
         Url: url
     }
 }
