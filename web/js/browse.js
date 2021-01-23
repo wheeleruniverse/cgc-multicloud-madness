@@ -3,19 +3,10 @@ function() {
 
     function startup() {
         
-        getAmazonPresignedUrl(getAuth);
+        queryAzureAnalysisTable(getData);
     }
     
-    
-    function getAuth(auth){
-        
-        queryAzureAnalysisTable(getData, null, auth);
-    }
-    
-    function getData(data, auth){
-        
-       
-        var s3Signature = auth['Url'].substr(auth['Url'].indexOf('?'));
+    function getData(data){
         
         $.each(data['Data'], function(idx, r){
             
@@ -24,35 +15,63 @@ function() {
                 return true; // continue
             }
             
-            var key = r.PartitionKey + "_" + r.RowKey;
-            var keySelector = "#" + key;
+            var recordId = r.RowKey;
+            var labelsId = `${recordId}-labels`;
+            
+            var recordSelector = `#${recordId}`;
+            var labelsSelector = `#${labelsId}`;
+            
             
             $("<div/>", {
-                "id": key,
+                "id": recordId,
                 "class": "data-record"
             })
             .appendTo("#content");
             
-            $("<img/>", {
-                "src": auth['Url']
-                // "src": `https://${r.S3BucketName}.s3.amazonaws.com/${r.S3ObjectName}${s3Signature}`
-            })
-            .appendTo(keySelector);
             
-                        
-            $("<span/>", {"html": "Index: " + idx + "<br/>"}).appendTo("#" + key);
-            $("<span/>", {"html": "PartitionKey: " + r.PartitionKey + "<br/>"}).appendTo("#" + key);
-            $("<span/>", {"html": "RowKey: " + r.RowKey + "<br/>"}).appendTo("#" + key);
-            $("<span/>", {"html": "S3BucketName: " + r.S3BucketName + "<br/>"}).appendTo("#" + key);
-            $("<span/>", {"html": "S3ObjectName: " + r.S3ObjectName + "<br/>"}).appendTo("#" + key);
-            $("<span/>", {"html": "Timestamp: " + r.Timestamp + "<br/>"}).appendTo("#" + key);
-            $("<br/>").appendTo("#" + key);
-            
-            $.each(labels, function(jdx, v){
-                $("<span/>", {"html": "Label.Name: " + v.Name + "<br/>"}).appendTo("#" + key);
-                $("<span/>", {"html": "Label.Likelihood: " + v.Likelihood + "<br/>"}).appendTo("#" + key);
-                $("<span/>", {"html": "Label.Score: " + v.Score + "<br/>"}).appendTo("#" + key);
-                $("<br/>").appendTo("#" + key);
+            getAmazonPresignedGet(r.S3BucketName, r.S3ObjectName, function(data){
+                $("<img/>", {
+                    "data-key": r.RowKey,
+                    "data-partition": r.PartitionKey,
+                    "data-s3bucket": r.S3BucketName,
+                    "data-s3object": r.S3ObjectName,
+                    "data-timestamp": r.Timestamp,
+                    "src": data['Url']
+                })
+                .appendTo(recordSelector);
+                
+                $("<div/>", {
+                    "id": labelsId,
+                    "class": "data-labels"
+                })
+                .appendTo(recordSelector);
+                
+                $.each(labels, function(jdx, v){
+                    
+                    var fieldId = `${labelsId}-${jdx}`;
+                    var fieldSelector = `#${fieldId}`;
+                    
+                    $("<div/>", {
+                        "id": fieldId,
+                        "class": "label"
+                    })
+                    .appendTo(labelsSelector);
+                    
+                    $("<span/>", {
+                        "html": `Label.Name: ${v.Name}`
+                    })
+                    .appendTo(fieldSelector);
+                    
+                    $("<span/>", {
+                        "html": `Label.Likelihood: ${v.Likelihood}`
+                    })
+                    .appendTo(fieldSelector);
+                    
+                    $("<span/>", {
+                        "html": `Label.Score: ${v.Score}`
+                    })
+                    .appendTo(fieldSelector);
+                });
             });
         });
     }

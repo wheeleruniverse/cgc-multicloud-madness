@@ -66,7 +66,7 @@ function() {
         context.drawImage(video, 0, 0, width, height);
         
         
-        getAmazonPresignedUrl(
+        getAmazonPresignedPut(
         
             // success
             function(data){

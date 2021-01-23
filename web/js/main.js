@@ -1,10 +1,14 @@
 
-const url = "https://v21oicmkdc.execute-api.us-east-1.amazonaws.com";
+const root = "https://v21oicmkdc.execute-api.us-east-1.amazonaws.com";
 
-function getAmazonPresignedUrl(success, failure, args){
+function getAmazonPresignedGet(bucketName, objectName, success, failure, args){
+    
+    let url = bucketName && objectName 
+        ? `${root}/getAmazonPresignedUrl?bucketName=${bucketName}&objectName=${objectName}` 
+        : `${root}/getAmazonPresignedUrl`;
     
     $.ajax({
-        url: `${url}/getAmazonPresignedUrl`,
+        url: url,
         type: "GET",
         success: function(data){ 
             success(data, args);
@@ -20,10 +24,15 @@ function getAmazonPresignedUrl(success, failure, args){
 }
 
 
+function getAmazonPresignedPut(success, failure, args){
+    return getAmazonPresignedGet(null, null, success, failure, args);
+}
+
+
 function queryAzureAnalysisTable(success, failure, args){
     
     $.ajax({
-        url: `${url}/queryAzureAnalysisTable`,
+        url: `${root}/queryAzureAnalysisTable`,
         type: "GET",
         beforeSend: function(xhr){
             xhr.setRequestHeader('Accept', 'application/json;odata=nometadata');

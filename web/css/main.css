@@ -49,9 +49,28 @@
 }
 
 .data-record {
-    border: 1px solid black;
     padding: 1em;
     text-align: left;
+}
+
+.data-record > img {
+    border: 1px solid black;
+    box-shadow: 3px 3px 4px black;
+    height: 240px;
+    width: 320px;
+}
+
+.data-labels {
+    display: none;
+    padding: 0.5em;
+}
+
+.label {
+    padding: 0.25em;
+}
+
+.label > span {
+    padding: 0.25em;
 }
 
 .navbar {
