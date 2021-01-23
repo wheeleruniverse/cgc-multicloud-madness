@@ -1,8 +1,4 @@
 
-#canvas {
-    display: none;
-}
-
 #content {
     font-size: 1em;
     margin-left: 3em;
@@ -13,64 +9,6 @@
 #header > h1 {
     color: #00008B;
     text-align: center;
-}
-
-#start-btn {
-    background-color: #00008B;
-    border: 1px solid black;
-    box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.2);
-    bottom:32px;
-    color: white;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 14px;
-    position: relative;
-}
-
-#start-btn:disabled, #start-btn[disabled]{
-    background-color: #505050;
-    border: 1px solid black;
-    box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.2);
-    bottom:32px;
-    color: white;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 14px;
-    position: relative;
-}
-
-#video {
-    border: 1px solid black;
-    box-shadow: 2px 2px 3px black;
-    height: 480px;
-    width: 640px;
-}
-
-.data-record {
-    padding: 1em;
-    text-align: left;
-}
-
-.data-record > img {
-    border: 1px solid black;
-    box-shadow: 3px 3px 4px black;
-    height: 240px;
-    width: 320px;
-}
-
-.data-labels {
-    display: none;
-    padding: 0.5em;
-}
-
-.label {
-    padding: 0.25em;
-}
-
-.label > span {
-    padding: 0.25em;
 }
 
 .navbar {

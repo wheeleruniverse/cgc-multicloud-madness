@@ -1,80 +1,47 @@
-(
-function() {
-
-    function startup() {
-        
-        queryAzureAnalysisTable(getData);
-    }
+$(document).ready(function () {
     
-    function getData(data){
+    var azureAnalysisTableData = {};
+    
+    $("#modal-close").click(function() {
+        $("#modal-content,#modal-background").toggleClass("active");
+    });
+    
+    
+    queryAzureAnalysisTable(function(data){
         
-        $.each(data['Data'], function(idx, r){
-            
+        // filter unsafe records
+        var records = $.grep(data['Data'], function(r){
             var labels = JSON.parse(r.SerializedVisionAnalysis).Labels;
-            if (isUnsafe(labels)){
-                return true; // continue
-            }
+            return !isUnsafe(labels);
+        }); 
+        console.log(`Loaded ${records.length} "Safe" Record(s)`);
+        
+        // populate records
+        $.each(records, function(idx, r){
             
-            var recordId = r.RowKey;
-            var labelsId = `${recordId}-labels`;
+            azureAnalysisTableData[r.RowKey] = r;
             
-            var recordSelector = `#${recordId}`;
-            var labelsSelector = `#${labelsId}`;
-            
-            
-            $("<div/>", {
-                "id": recordId,
-                "class": "data-record"
-            })
-            .appendTo("#content");
-            
-            
-            getAmazonPresignedGet(r.S3BucketName, r.S3ObjectName, function(data){
+            getAmazonPresignedGet(r.S3BucketName, r.S3ObjectName, function(auth){
+                
                 $("<img/>", {
                     "data-key": r.RowKey,
-                    "data-partition": r.PartitionKey,
-                    "data-s3bucket": r.S3BucketName,
-                    "data-s3object": r.S3ObjectName,
-                    "data-timestamp": r.Timestamp,
-                    "src": data['Url']
+                    "src": auth['Url'],
+                    "click": function(){
+                        
+                        $("#modal-content,#modal-background").toggleClass("active");
+                        
+                        var key = $(this).attr("data-key");
+                        
+                        $("<div/>", {
+                            "html": JSON.stringify(azureAnalysisTableData[key])
+                        })
+                        .appendTo("#modal-content");
+                    }
                 })
-                .appendTo(recordSelector);
-                
-                $("<div/>", {
-                    "id": labelsId,
-                    "class": "data-labels"
-                })
-                .appendTo(recordSelector);
-                
-                $.each(labels, function(jdx, v){
-                    
-                    var fieldId = `${labelsId}-${jdx}`;
-                    var fieldSelector = `#${fieldId}`;
-                    
-                    $("<div/>", {
-                        "id": fieldId,
-                        "class": "label"
-                    })
-                    .appendTo(labelsSelector);
-                    
-                    $("<span/>", {
-                        "html": `Label.Name: ${v.Name}`
-                    })
-                    .appendTo(fieldSelector);
-                    
-                    $("<span/>", {
-                        "html": `Label.Likelihood: ${v.Likelihood}`
-                    })
-                    .appendTo(fieldSelector);
-                    
-                    $("<span/>", {
-                        "html": `Label.Score: ${v.Score}`
-                    })
-                    .appendTo(fieldSelector);
-                });
+                .appendTo("#content");
             });
         });
-    }
+    });
     
     
     function isUnsafe(labels){
@@ -89,8 +56,47 @@ function() {
         });
         return unsafe;
     }
+
+                           
+/*
+TODO:
+
+$("<div/>", {
+    "id": labelsId,
+    "class": "data-labels"
+})
+.appendTo(recordSelector);
+
+$.each(labels, function(jdx, v){
+    
+    var fieldId = `${labelsId}-${jdx}`;
+    var fieldSelector = `#${fieldId}`;
+    
+    $("<div/>", {
+        "id": fieldId,
+        "class": "label"
+    })
+    .appendTo(labelsSelector);
+    
+    $("<span/>", {
+        "html": `Label.Name: ${v.Name}`
+    })
+    .appendTo(fieldSelector);
+    
+    $("<span/>", {
+        "html": `Label.Likelihood: ${v.Likelihood}`
+    })
+    .appendTo(fieldSelector);
+    
+    $("<span/>", {
+        "html": `Label.Score: ${v.Score}`
+    })
+    .appendTo(fieldSelector);
+*/
+    
+
     
     
-    window.addEventListener('load', startup, false);
     
-})();
+    
+});

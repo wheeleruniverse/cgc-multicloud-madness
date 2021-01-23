@@ -4,13 +4,26 @@
 	<title>Multi Cloud Picture Analyzer</title>
 	<meta charset="utf-8">
 	<link rel="stylesheet" type="text/css" href="../css/main.css">
+	<link rel="stylesheet" type="text/css" href="../css/browse.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="../js/main.js"></script>
     <script src="../js/browse.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    
 </head>
 <body>
     <div id="header"></div>
-    <div id="content" class="flex-container"></div>
+    <div id="content" class="data-container"></div>
+    
+    
+    <!--
+    <button id="modal-launcher">Launch Modal Window</button>
+    -->
+
+    <div id="modal-background"></div>
+    <div id="modal-content">
+        <button id="modal-close">&times;</button>
+    </div>
     <script>
     $(function(){
         $("#header").load("header.html");
