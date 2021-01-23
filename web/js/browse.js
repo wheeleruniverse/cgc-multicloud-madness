@@ -3,6 +3,7 @@ $(document).ready(function () {
     var azureAnalysisTableData = {};
     
     $("#modal-close").click(function() {
+        $("#modal-data").remove();
         $("#modal-content,#modal-background").toggleClass("active");
     });
     
@@ -33,6 +34,7 @@ $(document).ready(function () {
                         var key = $(this).attr("data-key");
                         
                         $("<div/>", {
+                            "id": "modal-data",
                             "html": JSON.stringify(azureAnalysisTableData[key])
                         })
                         .appendTo("#modal-content");
