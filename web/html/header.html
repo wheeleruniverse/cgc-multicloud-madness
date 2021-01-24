@@ -1,5 +1,4 @@
 <div class="navbar">
-    <a id="nav_home">home</a>
     <a id="nav_browse">browse</a>
     <a id="nav_selfie">#selfie</a>
 </div>
@@ -13,10 +12,7 @@
         $('.navbar a').each(function(){
         
             // set href
-            if ("nav_home" === this.id){
-                this.href = root + "web/index.html";
-            }
-            else if ("nav_browse" === this.id){
+            if ("nav_browse" === this.id){
                 this.href = root + "web/html/browse.html";
             }
             else if ("nav_selfie" === this.id){

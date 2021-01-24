@@ -71,6 +71,7 @@ table {
 .data-container > img {
     border: 1px solid black;
     box-shadow: 3px 3px 4px black;
+    cursor: pointer;
     height: 240px;
     width: 320px;
 }
