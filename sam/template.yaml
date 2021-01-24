@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: creates a serverless api that returns pre-signed urls
+Description: creates a serverless api and functions for cgc0121
 
 Transform: AWS::Serverless-2016-10-31
 
@@ -16,7 +16,7 @@ Resources:
           - POST
           - OPTIONS
         AllowOrigins: 
-          - "https://d1p4etgsrvfxla.cloudfront.net"
+          - "https://selfieanalyzer.com"
       Tags:
         Project: CloudGuruChallenge0121
 
