@@ -3,7 +3,7 @@ $(document).ready(function () {
     var azureAnalysisTableData = {};
     
     $("#modal-close").click(function() {
-        $("#modal-data").remove();
+        $(".modal-data").remove();
         $("#modal-content,#modal-background").toggleClass("active");
     });
     
@@ -27,18 +27,7 @@ $(document).ready(function () {
                 $("<img/>", {
                     "data-key": r.RowKey,
                     "src": auth['Url'],
-                    "click": function(){
-                        
-                        $("#modal-content,#modal-background").toggleClass("active");
-                        
-                        var key = $(this).attr("data-key");
-                        
-                        $("<div/>", {
-                            "id": "modal-data",
-                            "html": JSON.stringify(azureAnalysisTableData[key])
-                        })
-                        .appendTo("#modal-content");
-                    }
+                    "click": clickImage
                 })
                 .appendTo("#content");
             });
@@ -46,6 +35,68 @@ $(document).ready(function () {
     });
     
     
+    function clickImage(){
+        
+        var data = azureAnalysisTableData[$(this).attr("data-key")];
+        var date = data.Timestamp;
+        
+        $("#modal-content,#modal-background").toggleClass("active");
+                
+        $("<div/>", {
+            "class": "modal-data",
+            "html": `
+                <div id="modal-data-wrapper">
+                    <p id="img-name">${data.S3ObjectName} // ${date.substr(0, date.indexOf('T'))} @ ${date.substr(date.indexOf('T') + 1, 8)} UTC</p>
+                    <br/>
+                    <img class="modal-data" src=${$(this).attr("src")} />
+                    <hr/>
+                    ${convertLabelsToHtml(JSON.parse(data.SerializedVisionAnalysis).Labels)}
+                </div>
+            `
+        })
+        .appendTo("#modal-content");
+    }
+    
+    function convertLabelsToHtml(labels){
+        
+        var adultNames = ["Adult", "Medical", "Nsfw", "Racy", "Spoof", "Violence"];
+        var adultTable = "<table><tr><th>Label</th><th>Likelihood</th></tr>";
+        var labelTable = "<table><tr><th>Label</th><th>Score</th></tr>";
+        
+        $.each(labels, function(idx, r){
+            
+            if(adultNames.includes(r.Name)){
+                adultTable += `<tr><td>${r.Name}</td><td>${convertLikelihoodToString(r.Likelihood)}</td></tr>`
+            }
+            else {
+                labelTable += `<tr><td>${r.Name}</td><td>${r.Score}</td></tr>`
+            }
+        });
+        
+        adultTable += "</table>";
+        labelTable += "</table>";
+        return `<div>${adultTable}${labelTable}</div>`;
+    }
+    
+    
+    function convertLikelihoodToString(likelihood){
+        
+        switch(likelihood) {
+          case 1:
+            return "Very Unlikely"
+          case 2:
+            return "Unlikely"
+          case 3:
+            return "Possible"
+          case 4:
+            return "Likely"
+          case 5:
+            return "Very Likely"
+          default:
+            return "Unknown"
+        }
+    }   
+
     function isUnsafe(labels){
         
         var unsafe = false;
@@ -58,47 +109,4 @@ $(document).ready(function () {
         });
         return unsafe;
     }
-
-                           
-/*
-TODO:
-
-$("<div/>", {
-    "id": labelsId,
-    "class": "data-labels"
-})
-.appendTo(recordSelector);
-
-$.each(labels, function(jdx, v){
-    
-    var fieldId = `${labelsId}-${jdx}`;
-    var fieldSelector = `#${fieldId}`;
-    
-    $("<div/>", {
-        "id": fieldId,
-        "class": "label"
-    })
-    .appendTo(labelsSelector);
-    
-    $("<span/>", {
-        "html": `Label.Name: ${v.Name}`
-    })
-    .appendTo(fieldSelector);
-    
-    $("<span/>", {
-        "html": `Label.Likelihood: ${v.Likelihood}`
-    })
-    .appendTo(fieldSelector);
-    
-    $("<span/>", {
-        "html": `Label.Score: ${v.Score}`
-    })
-    .appendTo(fieldSelector);
-*/
-    
-
-    
-    
-    
-    
 });
