@@ -35,7 +35,7 @@ function() {
 
 
         // set image dimensions
-        video.addEventListener('canplay', function(event){
+        video.addEventListener('click', function(event){
             
             if (!streaming) {
                 canvas.setAttribute('width', width);
@@ -46,6 +46,8 @@ function() {
             }
             
         }, false);
+        
+        video.click();
 
 
         // configure click handler to save the picture
