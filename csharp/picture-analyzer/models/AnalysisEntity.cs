@@ -6,7 +6,7 @@ namespace Wheeler.PictureAnalyzer
 {
     public class AnalysisEntity : TableEntity
     {
-        private static readonly Random rnd = new Random();
+        private static readonly Random Rnd = new Random();
 
         // _______________________________________________________________
         // Database Fields
@@ -39,7 +39,7 @@ namespace Wheeler.PictureAnalyzer
 
         public AnalysisEntity(bool success, string errorMessage)
         {
-            PartitionKey = rnd.Next(1, 10).ToString();
+            PartitionKey = Rnd.Next(1, 10).ToString();
             RowKey = Guid.NewGuid().ToString();
             Success = success;
             ErrorMessage = errorMessage;

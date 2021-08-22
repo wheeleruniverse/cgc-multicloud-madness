@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Wheeler.PictureAnalyzer
 {
-    class InMemoryObject
+    internal class InMemoryObject
     {
         public IEnumerable<string> Headers { get; set; }
         public byte[] Data { get; set; }

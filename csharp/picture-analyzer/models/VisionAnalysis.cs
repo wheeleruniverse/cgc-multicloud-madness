@@ -1,14 +1,12 @@
 ﻿using Google.Cloud.Vision.V1;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Wheeler.PictureAnalyzer
 {
     public class VisionAnalysis
     {
-        public class Label
+        private class Label
         {
             public Likelihood Likelihood { get; set; }
             public string Name { get; set; }
@@ -16,17 +14,17 @@ namespace Wheeler.PictureAnalyzer
 
             public override string ToString()
             {
-                string likelihoodString = Likelihood.Unknown != Likelihood ? $"[{Likelihood}]" : "";
-                string scoreString = Score > 0 ? $"[{Score}]" : "";
+                var likelihoodString = Likelihood.Unknown != Likelihood ? $"[{Likelihood}]" : "";
+                var scoreString = Score > 0 ? $"[{Score}]" : "";
 
                 return $"{Name}{scoreString}{likelihoodString}";
             }
         }
 
-        public List<Label> Labels { get; set; }
+        private List<Label> Labels { get; set; }
 
 
-        public VisionAnalysis(SafeSearchAnnotation safeSearch, IReadOnlyList<EntityAnnotation> labels)
+        public VisionAnalysis(SafeSearchAnnotation safeSearch, IEnumerable<EntityAnnotation> labels)
         {
             // add safe search labels
             Labels = new List<Label>
