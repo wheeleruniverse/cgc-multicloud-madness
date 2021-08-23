@@ -6,7 +6,7 @@ namespace Wheeler.PictureAnalyzer
 {
     public class VisionAnalysis
     {
-        private class Label
+        public class Label
         {
             public Likelihood Likelihood { get; set; }
             public string Name { get; set; }
@@ -21,7 +21,7 @@ namespace Wheeler.PictureAnalyzer
             }
         }
 
-        private List<Label> Labels { get; set; }
+        public List<Label> Labels { get; set; }
 
 
         public VisionAnalysis(SafeSearchAnnotation safeSearch, IEnumerable<EntityAnnotation> labels)
