@@ -20,6 +20,8 @@ namespace Wheeler.PictureAnalyzer
 {
     public class Function
     {
+        // global variables
+        private static readonly Random Rnd = new Random();
 
         // aws variables
         private static readonly RegionEndpoint AwsRegion = RegionEndpoint.USEast1;
@@ -58,7 +60,7 @@ namespace Wheeler.PictureAnalyzer
         /// <summary>
         /// initializes aws resources
         /// </summary>
-        private void InitAws()
+        private static void InitAws()
         {
             _awsS3Client ??= new AmazonS3Client(AwsRegion);
         }
@@ -80,7 +82,7 @@ namespace Wheeler.PictureAnalyzer
         /// <summary>
         /// initializes gcp resources
         /// </summary>
-        private void InitGcp()
+        private static void InitGcp()
         {
             Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "creds/gcp-vision-svc.json");
             _gcpVisionClient ??= ImageAnnotatorClient.Create();
@@ -129,19 +131,8 @@ namespace Wheeler.PictureAnalyzer
 
             // save to azure tables
             var entity = QueryEntity();
-            if (entity == null)
-            {
-                // table is empty (load all 9 partitions)
-                for (var i = 1; i <= 9; i++)
-                {
-                    response.PartitionKey = i.ToString();
-                    InsertEntity(response);
-                }
-            }
-            else
-            {
-                InsertEntity(response);
-            }
+            var group = entity == null ? 0 : Rnd.Next(1, 4);
+            InsertEntityIntoPartitionGroup(response, group);
             return response;
         }
 
@@ -150,7 +141,7 @@ namespace Wheeler.PictureAnalyzer
         /// </summary>
         /// <param name="bytes">the bytes of an image to process</param>
         /// <returns>the gcp vision results</returns>
-        private VisionAnalysis Analyze(byte[] bytes)
+        private static VisionAnalysis Analyze(byte[] bytes)
         {
             var image = Image.FromBytes(bytes);
             var safeSearch = _gcpVisionClient.DetectSafeSearch(image);
@@ -164,7 +155,7 @@ namespace Wheeler.PictureAnalyzer
         /// <param name="s3Bucket">the s3 bucket to read</param>
         /// <param name="s3Object">the s3 object to read</param>
         /// <returns>an object that contains the s3 object in bytes along with information about the s3 object</returns>
-        private InMemoryObject GetObject(string s3Bucket, string s3Object)
+        private static InMemoryObject GetObject(string s3Bucket, string s3Object)
         {
             var request = new GetObjectRequest
             {
@@ -208,7 +199,7 @@ namespace Wheeler.PictureAnalyzer
         /// inserts the provided entity into azure tables storage
         /// </summary>
         /// <param name="entity">the entity to insert</param>
-        private void InsertEntity(AnalysisEntity entity)
+        private static void InsertEntity(AnalysisEntity entity)
         {
             // insert into the database
             var operation = TableOperation.Insert(entity);
@@ -228,6 +219,50 @@ namespace Wheeler.PictureAnalyzer
 
                 entity.ErrorMessage = errorMessage;
                 entity.Success = false;
+            }
+        }
+        
+        /// <summary>
+        /// inserts the provided entity into azure tables storage
+        /// </summary>
+        /// <param name="entity">the entity to insert</param>
+        /// <param name="group">
+        ///     the group to insert
+        ///         0 = 1-9
+        ///         1 = 1-3
+        ///         2 = 4-6
+        ///         3 = 7-9
+        /// </param>
+        private static void InsertEntityIntoPartitionGroup(AnalysisEntity entity, int group)
+        {
+            int start;
+            int limit;
+            switch (group)
+            {
+                case 0:
+                    start = 1;
+                    limit = 9;
+                    break;
+                case 1:
+                    start = 1;
+                    limit = 3;
+                    break;
+                case 2:
+                    start = 4;
+                    limit = 6;
+                    break;
+                case 3:
+                    start = 7;
+                    limit = 9;
+                    break;
+                default:
+                    LambdaLogger.Log($"Invalid PartitionGroup: ${group}");
+                    return;
+            }
+            for (var i = start; i <= limit; i++)
+            {
+                entity.PartitionKey = i.ToString();
+                InsertEntity(entity);
             }
         }
         
