@@ -6,7 +6,7 @@
 #start-btn {
     background-color: #00008B;
     border: 1px solid black;
-    box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.2);
     bottom:32px;
     color: white;
     display: block;
@@ -19,7 +19,7 @@
 #start-btn:disabled, #start-btn[disabled]{
     background-color: #505050;
     border: 1px solid black;
-    box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.2);
     bottom:32px;
     color: white;
     display: block;
